@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>보고서 생성 - BrainGuard AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet" />
+    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+</head>
+<body class="sb-nav-fixed">
+    <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
+        <!-- Navbar Brand-->
+        <a class="navbar-brand ps-3" href="{{ url_for('home') }}">BrainGuard AI</a>
+        <!-- Sidebar Toggle-->
+        <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" href="#!"><i class="fas fa-bars"></i></button>
+        <!-- Navbar Search-->
+        <form class="d-none d-md-inline-block form-inline ms-auto me-0 me-md-3 my-2 my-md-0">
+            <div class="input-group">
+                <input class="form-control" type="text" placeholder="Search for..." aria-label="Search for..." aria-describedby="btnNavbarSearch" />
+                <button class="btn btn-primary" id="btnNavbarSearch" type="button"><i class="fas fa-search"></i></button>
+            </div>
+        </form>
+        <!-- Navbar-->
+        <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-user fa-fw"></i></a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                    <li><a class="dropdown-item" href="#!">Settings</a></li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+    <div id="layoutSidenav">
+        <div id="layoutSidenav_nav">
+            <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+                <div class="sb-sidenav-menu">
+                    <div class="nav">
+                        <div class="sb-sidenav-menu-heading">Core</div>
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                            뇌종양 세그멘테이션
+                        </a>
+                        <div class="sb-sidenav-menu-heading">Interface</div>
+                        <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseLayouts" aria-expanded="false" aria-controls="collapseLayouts">
+                            <div class="sb-nav-link-icon"><i class="fas fa-columns"></i></div>
+                            환자 정보
+                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                        </a>
+                        <div class="collapse" id="collapseLayouts" aria-labelledby="headingOne" data-bs-parent="#sidenavAccordion">
+                            <nav class="sb-sidenav-menu-nested nav">
+                                <a class="nav-link" href="{{ url_for('patient_info') }}">환자 정보 관리</a>
+                                <a class="nav-link" href="{{ url_for('report_generation') }}">보고서 생성</a>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+                <div class="sb-sidenav-footer">
+                    <div class="small">문의사항:</div>
+                    123qwe@gmail.com
+                </div>
+            </nav>
+        </div>
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid px-4">
+                    <h1 class="mt-4">보고서 생성</h1>
+                    <div class="mb-3">
+                        <label for="search_query" class="form-label">환자 이름 또는 생년월일로 검색</label>
+                        <input class="form-control" type="text" id="search_query" name="search_query" placeholder="이름 또는 생년월일 입력">
+                        <div id="search_results" class="dropdown-menu"></div>
+                    </div>
+                    <form id="report-form" style="display:none;">
+                        <input type="hidden" id="db_key" name="db_key">
+                        <div class="mb-3">
+                            <label for="patient_name" class="form-label">환자 이름</label>
+                            <input class="form-control" type="text" id="patient_name" name="patient_name" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="scan_date" class="form-label">스캔 날짜</label>
+                            <input class="form-control" type="date" id="scan_date" name="scan_date" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="scan_type" class="form-label">스캔 유형</label>
+                            <input class="form-control" type="text" id="scan_type" name="scan_type" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="scan_area" class="form-label">스캔 부위</label>
+                            <input class="form-control" type="text" id="scan_area" name="scan_area" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="scan_details" class="form-label">스캔 기술적 세부사항</label>
+                            <input class="form-control" type="text" id="scan_details" name="scan_details" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">세그멘테이션 이미지 및 설명</label>
+                            <div id="segmentation_image"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tumor_details" class="form-label">종양의 위치 및 크기</label>
+                            <textarea class="form-control" id="tumor_details" name="tumor_details" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tumor_class" class="form-label">종양 클래스</label>
+                            <select class="form-control" id="tumor_class" name="tumor_class" required>
+                                <option value="0">0 - 없음</option>
+                                <option value="1">1 - 종양 클래스 1</option>
+                                <option value="2">2 - 종양 클래스 2</option>
+                                <option value="4">4 - 종양 클래스 3</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="diagnosis_opinion" class="form-label">진단 및 소견</label>
+                            <textarea class="form-control" id="diagnosis_opinion" name="diagnosis_opinion" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="treatment_plan" class="form-label">치료 계획 및 권고 사항</label>
+                            <textarea class="form-control" id="treatment_plan" name="treatment_plan" required></textarea>
+                        </div>
+                        <button class="btn btn-primary" type="button" onclick="generatePDF()">PDF로 저장</button>
+                    </form>
+                    <div id="pagination" style="display:none;">
+                        <button class="btn btn-secondary" id="prev_page">이전</button>
+                        <span id="page_number"></span>
+                        <button class="btn btn-secondary" id="next_page">다음</button>
+                    </div>
+                </div>
+            </main>
+            <footer class="py-4 bg-light mt-auto">
+                <div class="container-fluid px-4">
+                    <div class="d-flex align-items-center justify-content-between small">
+                        <div class="text-muted">Copyright &copy; Your Website 2023</div>
+                        <div>
+                            <a href="#">Privacy Policy</a>
+                            &middot;
+                            <a href="#">Terms &amp; Conditions</a>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.1/jspdf.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='/malgunbd.js') }}"></script>
+    <script>
+        const searchPatientUrl = "{{ url_for('search_patient') }}";
+        const loadPatientInfoUrl = "{{ url_for('load_patient_info') }}";
+        const deletePatientInfoUrl = "{{ url_for('delete_patient_info') }}";
+        const exportPatientInfoUrl = "{{ url_for('export_patient_info') }}";
+    </script>
+    <script src="{{ url_for('static', filename='report_generation.js') }}"></script>
+    <style>
+        #search_results {
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            position: absolute;
+            background-color: white;
+            width: 100%;
+            border: 1px solid #ddd;
+            z-index: 1000;
+        }
+
+        .dropdown-item {
+            cursor: pointer;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</body>
+</html>
